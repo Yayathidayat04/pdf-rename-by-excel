@@ -1,113 +1,176 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Rename PDF Berdasarkan Excel</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PDF Rename by Excel</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     * {
       box-sizing: border-box;
     }
 
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #f3f4f6, #e5e7eb);
-      color: #333;
+      font-family: 'Inter', sans-serif;
       margin: 0;
       padding: 0;
+      background-color: #f8fafc;
+      color: #1e293b;
       display: flex;
-      min-height: 100vh;
-      align-items: center;
       justify-content: center;
+      align-items: center;
+      min-height: 100vh;
     }
 
-    .container {
-      background: #fff;
+    .card {
+      background: white;
       padding: 40px;
       border-radius: 12px;
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
-      max-width: 500px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+      max-width: 600px;
       width: 100%;
     }
 
-    h2 {
-      margin-bottom: 10px;
-      color: #111827;
+    h1 {
+      text-align: center;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 20px;
     }
 
-    p {
-      font-size: 15px;
-      margin: 15px 0 5px;
-      color: #4b5563;
+    .section {
+      margin-bottom: 20px;
+    }
+
+    .label {
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .upload-box {
+      background-color: #f1f5f9;
+      border: 2px dashed #cbd5e1;
+      padding: 20px;
+      text-align: center;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .upload-box:hover {
+      background-color: #e2e8f0;
     }
 
     input[type="file"] {
-      padding: 10px;
-      border: 2px dashed #9ca3af;
-      width: 100%;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      background: #f9fafb;
+      display: none;
+    }
+
+    .file-info {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #0f766e;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 20px;
     }
 
     button {
-      width: 48%;
+      flex: 1;
       padding: 12px;
-      margin: 10px 1%;
-      background-color: #3b82f6;
-      color: white;
       border: none;
       border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
       cursor: pointer;
-      font-weight: bold;
       transition: background-color 0.3s ease;
     }
 
-    button:hover {
+    .btn-process {
+      background-color: #3b82f6;
+      color: white;
+    }
+
+    .btn-process:hover {
       background-color: #2563eb;
     }
 
-    button:disabled {
-      background-color: #9ca3af;
+    .btn-download {
+      background-color: #10b981;
+      color: white;
+    }
+
+    .btn-download:disabled {
+      background-color: #94a3b8;
       cursor: not-allowed;
     }
 
     #status {
-      margin-top: 15px;
-      font-weight: bold;
-      color: #1f2937;
+      text-align: center;
+      margin-top: 20px;
+      font-weight: 500;
     }
 
-    @media (max-width: 500px) {
-      button {
-        width: 100%;
-        margin-bottom: 10px;
+    @media (max-width: 600px) {
+      .buttons {
+        flex-direction: column;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>🔄 Rename PDF Berdasarkan Excel</h2>
-    <p>1. Unggah file Excel (Nama Lama & Nama Baru)</p>
-    <input type="file" id="excelFile" accept=".xlsx, .xls">
+  <div class="card">
+    <h1>📄 Rename PDF Berdasarkan Excel</h1>
 
-    <p>2. Unggah file PDF yang ingin diubah</p>
-    <input type="file" id="pdfFiles" accept=".pdf" multiple>
-
-    <div style="display: flex; justify-content: space-between;">
-      <button onclick="proses()">🔍 Proses</button>
-      <button id="downloadBtn" onclick="unduh()" disabled>⬇️ Unduh ZIP</button>
+    <div class="section">
+      <label class="label">1. Unggah File Excel (.xlsx / .xls)</label>
+      <label class="upload-box" for="excelFile">
+        Klik untuk pilih file Excel
+        <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="tampilNamaExcel()" />
+      </label>
+      <div class="file-info" id="excelInfo"></div>
     </div>
 
-    <p id="status"></p>
+    <div class="section">
+      <label class="label">2. Unggah Beberapa File PDF</label>
+      <label class="upload-box" for="pdfFiles">
+        Klik untuk pilih file PDF
+        <input type="file" id="pdfFiles" accept=".pdf" multiple onchange="tampilJumlahPDF()" />
+      </label>
+      <div class="file-info" id="pdfInfo"></div>
+    </div>
+
+    <div class="buttons">
+      <button class="btn-process" onclick="proses()">🔍 Proses</button>
+      <button class="btn-download" id="downloadBtn" onclick="unduh()" disabled>⬇️ Unduh ZIP</button>
+    </div>
+
+    <div id="status"></div>
   </div>
 
   <script>
     let zip;
     let jumlahBerhasil = 0;
+
+    function tampilNamaExcel() {
+      const file = document.getElementById("excelFile").files[0];
+      const info = document.getElementById("excelInfo");
+      info.textContent = file ? `✅ Excel dipilih: ${file.name}` : "";
+    }
+
+    function tampilJumlahPDF() {
+      const files = document.getElementById("pdfFiles").files;
+      const info = document.getElementById("pdfInfo");
+      info.textContent = files.length
+        ? `✅ ${files.length} file PDF dipilih`
+        : "";
+    }
 
     async function bacaExcel(file) {
       return new Promise((resolve, reject) => {
@@ -136,7 +199,7 @@
       const status = document.getElementById("status");
 
       if (!excel || pdfFiles.length === 0) {
-        alert("Mohon unggah file Excel dan PDF terlebih dahulu.");
+        alert("Mohon unggah file Excel dan file PDF.");
         return;
       }
 
@@ -154,10 +217,10 @@
       }
 
       if (jumlahBerhasil > 0) {
-        status.textContent = `✅ ${jumlahBerhasil} file cocok dan siap diunduh.`;
+        status.textContent = `✅ ${jumlahBerhasil} file berhasil diganti nama.`;
         document.getElementById("downloadBtn").disabled = false;
       } else {
-        status.textContent = "⚠️ Tidak ada nama file yang cocok.";
+        status.textContent = "⚠️ Tidak ada nama file yang cocok di Excel.";
         document.getElementById("downloadBtn").disabled = true;
       }
     }
