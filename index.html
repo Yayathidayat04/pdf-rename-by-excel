@@ -3,31 +3,113 @@
 <head>
   <meta charset="UTF-8">
   <title>Rename PDF Berdasarkan Excel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 40px; }
-    input { margin: 10px; }
-    button { padding: 10px 20px; }
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #f3f4f6, #e5e7eb);
+      color: #333;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+      max-width: 500px;
+      width: 100%;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+      color: #111827;
+    }
+
+    p {
+      font-size: 15px;
+      margin: 15px 0 5px;
+      color: #4b5563;
+    }
+
+    input[type="file"] {
+      padding: 10px;
+      border: 2px dashed #9ca3af;
+      width: 100%;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      background: #f9fafb;
+    }
+
+    button {
+      width: 48%;
+      padding: 12px;
+      margin: 10px 1%;
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #2563eb;
+    }
+
+    button:disabled {
+      background-color: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+      color: #1f2937;
+    }
+
+    @media (max-width: 500px) {
+      button {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+    }
   </style>
 </head>
 <body>
-  <h2>Ubah Nama File PDF Berdasarkan Excel</h2>
+  <div class="container">
+    <h2>🔄 Rename PDF Berdasarkan Excel</h2>
+    <p>1. Unggah file Excel (Nama Lama & Nama Baru)</p>
+    <input type="file" id="excelFile" accept=".xlsx, .xls">
 
-  <p>1. Unggah file Excel (dengan kolom: Nama Lama, Nama Baru)</p>
-  <input type="file" id="excelFile" accept=".xlsx, .xls">
-  
-  <p>2. Unggah file PDF yang ingin diubah namanya</p>
-  <input type="file" id="pdfFiles" accept=".pdf" multiple>
+    <p>2. Unggah file PDF yang ingin diubah</p>
+    <input type="file" id="pdfFiles" accept=".pdf" multiple>
 
-  <br><br>
-  <button onclick="processFiles()">Proses & Unduh</button>
-  <p id="status"></p>
+    <div style="display: flex; justify-content: space-between;">
+      <button onclick="proses()">🔍 Proses</button>
+      <button id="downloadBtn" onclick="unduh()" disabled>⬇️ Unduh ZIP</button>
+    </div>
+
+    <p id="status"></p>
+  </div>
 
   <script>
-    let renameMap = {};
+    let zip;
+    let jumlahBerhasil = 0;
 
-    function readExcel(file) {
+    async function bacaExcel(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -35,60 +117,57 @@
           const workbook = XLSX.read(data, { type: "array" });
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
           const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-          const map = {};
 
+          const mapping = {};
           for (let i = 1; i < rows.length; i++) {
-            const [oldName, newName] = rows[i];
-            if (oldName && newName) {
-              map[oldName.trim()] = newName.trim();
-            }
+            const [lama, baru] = rows[i];
+            if (lama && baru) mapping[lama.trim()] = baru.trim();
           }
-          resolve(map);
+          resolve(mapping);
         };
         reader.onerror = reject;
         reader.readAsArrayBuffer(file);
       });
     }
 
-    async function processFiles() {
-      const excelInput = document.getElementById("excelFile");
-      const pdfInput = document.getElementById("pdfFiles");
+    async function proses() {
+      const excel = document.getElementById("excelFile").files[0];
+      const pdfFiles = document.getElementById("pdfFiles").files;
       const status = document.getElementById("status");
 
-      if (!excelInput.files[0] || pdfInput.files.length === 0) {
-        alert("Mohon unggah file Excel dan file PDF.");
+      if (!excel || pdfFiles.length === 0) {
+        alert("Mohon unggah file Excel dan PDF terlebih dahulu.");
         return;
       }
 
-      status.textContent = "Memproses...";
+      status.textContent = "⏳ Memproses file...";
+      const mapping = await bacaExcel(excel);
+      zip = new JSZip();
+      jumlahBerhasil = 0;
 
-      try {
-        const map = await readExcel(excelInput.files[0]);
-        const zip = new JSZip();
-        let renamedCount = 0;
-
-        for (const file of pdfInput.files) {
-          const newName = map[file.name];
-          if (newName) {
-            zip.file(newName, file);
-            renamedCount++;
-          }
+      for (const file of pdfFiles) {
+        const namaBaru = mapping[file.name];
+        if (namaBaru) {
+          zip.file(namaBaru, file);
+          jumlahBerhasil++;
         }
-
-        if (renamedCount === 0) {
-          status.textContent = "Tidak ada file PDF yang cocok dengan Excel.";
-          return;
-        }
-
-        const blob = await zip.generateAsync({ type: "blob" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "pdf_renamed.zip";
-        link.click();
-        status.textContent = `Selesai! ${renamedCount} file berhasil diganti namanya.`;
-      } catch (err) {
-        status.textContent = "Terjadi kesalahan: " + err;
       }
+
+      if (jumlahBerhasil > 0) {
+        status.textContent = `✅ ${jumlahBerhasil} file cocok dan siap diunduh.`;
+        document.getElementById("downloadBtn").disabled = false;
+      } else {
+        status.textContent = "⚠️ Tidak ada nama file yang cocok.";
+        document.getElementById("downloadBtn").disabled = true;
+      }
+    }
+
+    async function unduh() {
+      const blob = await zip.generateAsync({ type: "blob" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "pdf_renamed.zip";
+      a.click();
     }
   </script>
 </body>
