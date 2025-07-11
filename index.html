@@ -6,26 +6,23 @@
   <title>PDF Rename by Excel</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       font-family: 'Inter', sans-serif;
       margin: 0;
-      padding: 0;
-      background-color: #f8fafc;
-      color: #1e293b;
+      background: #f8fafc;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
+      color: #1e293b;
     }
 
     .card {
-      background: white;
+      background: #fff;
       padding: 40px;
       border-radius: 12px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.05);
@@ -34,10 +31,10 @@
     }
 
     h1 {
-      text-align: center;
       font-size: 24px;
       font-weight: 600;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
+      text-align: center;
     }
 
     .section {
@@ -69,9 +66,15 @@
     }
 
     .file-info {
-      margin-top: 8px;
+      margin-top: 10px;
       font-size: 14px;
       color: #0f766e;
+      min-height: 20px;
+    }
+
+    .loading {
+      color: #475569;
+      font-style: italic;
     }
 
     .buttons {
@@ -115,6 +118,7 @@
       text-align: center;
       margin-top: 20px;
       font-weight: 500;
+      min-height: 24px;
     }
 
     @media (max-width: 600px) {
@@ -129,19 +133,19 @@
     <h1>📄 Rename PDF Berdasarkan Excel</h1>
 
     <div class="section">
-      <label class="label">1. Unggah File Excel (.xlsx / .xls)</label>
+      <label class="label">1. Unggah File Excel</label>
       <label class="upload-box" for="excelFile">
         Klik untuk pilih file Excel
-        <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="tampilNamaExcel()" />
+        <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="uploadExcel()" />
       </label>
       <div class="file-info" id="excelInfo"></div>
     </div>
 
     <div class="section">
-      <label class="label">2. Unggah Beberapa File PDF</label>
+      <label class="label">2. Unggah File PDF</label>
       <label class="upload-box" for="pdfFiles">
         Klik untuk pilih file PDF
-        <input type="file" id="pdfFiles" accept=".pdf" multiple onchange="tampilJumlahPDF()" />
+        <input type="file" id="pdfFiles" accept=".pdf" multiple onchange="uploadPDF()" />
       </label>
       <div class="file-info" id="pdfInfo"></div>
     </div>
@@ -158,18 +162,32 @@
     let zip;
     let jumlahBerhasil = 0;
 
-    function tampilNamaExcel() {
-      const file = document.getElementById("excelFile").files[0];
+    function uploadExcel() {
       const info = document.getElementById("excelInfo");
-      info.textContent = file ? `✅ Excel dipilih: ${file.name}` : "";
+      info.innerHTML = "<span class='loading'>⏳ Memuat file Excel...</span>";
+
+      setTimeout(() => {
+        const file = document.getElementById("excelFile").files[0];
+        if (file) {
+          info.innerHTML = `✅ Excel dimuat: <strong>${file.name}</strong>`;
+        } else {
+          info.innerHTML = "";
+        }
+      }, 300);
     }
 
-    function tampilJumlahPDF() {
-      const files = document.getElementById("pdfFiles").files;
+    function uploadPDF() {
       const info = document.getElementById("pdfInfo");
-      info.textContent = files.length
-        ? `✅ ${files.length} file PDF dipilih`
-        : "";
+      info.innerHTML = "<span class='loading'>⏳ Memuat file PDF...</span>";
+
+      setTimeout(() => {
+        const files = document.getElementById("pdfFiles").files;
+        if (files.length > 0) {
+          info.innerHTML = `✅ ${files.length} file PDF dimuat.`;
+        } else {
+          info.innerHTML = "";
+        }
+      }, 300);
     }
 
     async function bacaExcel(file) {
@@ -203,7 +221,7 @@
         return;
       }
 
-      status.textContent = "⏳ Memproses file...";
+      status.textContent = "⚙️ Memproses file...";
       const mapping = await bacaExcel(excel);
       zip = new JSZip();
       jumlahBerhasil = 0;
@@ -220,7 +238,7 @@
         status.textContent = `✅ ${jumlahBerhasil} file berhasil diganti nama.`;
         document.getElementById("downloadBtn").disabled = false;
       } else {
-        status.textContent = "⚠️ Tidak ada nama file yang cocok di Excel.";
+        status.textContent = "⚠️ Tidak ada file yang cocok dengan Excel.";
         document.getElementById("downloadBtn").disabled = true;
       }
     }
